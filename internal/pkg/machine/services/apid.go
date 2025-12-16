@@ -75,7 +75,9 @@ func (apid *APID) Run(ctx context.Context, endpoint netip.Prefix, logger *zap.Lo
 
 	var lc net.ListenConfig
 
-	lc.Control = network.BindToInterface(iface)
+	if iface != "" {
+		lc.Control = network.BindToInterface(iface)
+	}
 
 	lis, err := lc.Listen(ctx, "tcp", net.JoinHostPort(endpoint.Addr().String(), strconv.FormatInt(constants.ApidPort, 10)))
 	if err != nil {

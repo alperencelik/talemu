@@ -128,16 +128,22 @@ func (ctrl *APIDController) reconcile(ctx context.Context, r controller.Runtime,
 		return err
 	}
 
+	var (
+		address  netip.Prefix
+		linkName string
+	)
+
 	siderolink, found := addresses.Find(func(address *network.AddressStatus) bool {
 		return strings.HasPrefix(address.TypedSpec().LinkName, constants.SideroLinkName)
 	})
-	if !found {
-		logger.Info("apid is waiting for siderolink interface to be up")
-
-		return nil
+	if found {
+		address = siderolink.TypedSpec().Address
+		linkName = siderolink.TypedSpec().LinkName
+	} else {
+		// If siderolink is not found, we use the wildcard address and empty link name.
+		// This will make APID listen on all interfaces.
+		address = netip.MustParsePrefix("0.0.0.0/0")
 	}
-
-	address := siderolink.TypedSpec().Address
 
 	apiCerts, err := safe.ReaderGetByID[*secrets.API](ctx, r, secrets.APIID)
 	if err != nil && !state.IsNotFoundError(err) {
@@ -166,7 +172,7 @@ func (ctrl *APIDController) reconcile(ctx context.Context, r controller.Runtime,
 		return nil
 	}
 
-	if err = ctrl.APID.Run(ctx, address, logger, apiCerts, siderolink.TypedSpec().LinkName); err != nil {
+	if err = ctrl.APID.Run(ctx, address, logger, apiCerts, linkName); err != nil {
 		return err
 	}
 
