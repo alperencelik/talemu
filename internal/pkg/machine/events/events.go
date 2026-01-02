@@ -87,23 +87,28 @@ func (h *Handler) Run(ctx context.Context, logger *zap.Logger) error {
 				addr, ok := list.Find(func(r *network.AddressStatus) bool {
 					return strings.HasPrefix(r.TypedSpec().LinkName, constants.SideroLinkName)
 				})
-				if !ok {
-					return nil, fmt.Errorf("failed to look up siderolink address")
+				if ok {
+					siderolinkAddr := addr.TypedSpec().Address
+
+					bindAddress = net.TCPAddrFromAddrPort(netip.AddrPortFrom(
+						siderolinkAddr.Addr(),
+						0,
+					))
+
+					linkName = addr.TypedSpec().LinkName
+				} else {
+					bindAddress = &net.TCPAddr{
+						IP:   net.IPv4zero,
+						Port: 0,
+					}
 				}
-
-				siderolinkAddr := addr.TypedSpec().Address
-
-				bindAddress = net.TCPAddrFromAddrPort(netip.AddrPortFrom(
-					siderolinkAddr.Addr(),
-					0,
-				))
-
-				linkName = addr.TypedSpec().LinkName
 			}
 
 			dialer.LocalAddr = bindAddress
 
-			dialer.Control = emunet.BindToInterface(linkName)
+			if linkName != "" {
+				dialer.Control = emunet.BindToInterface(linkName)
+			}
 
 			return dialer.DialContext(ctx, "tcp", address)
 		}),

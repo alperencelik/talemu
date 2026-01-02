@@ -68,10 +68,10 @@ func NewRuntime(ctx context.Context, logger *zap.Logger, slot int, id string, gl
 	}
 
 	controllers := []controller.Controller{
-		&controllers.ManagerController{
-			Slot: slot,
-			NC:   nc,
-		},
+		// &controllers.ManagerController{
+		// Slot: slot,
+		// NC:   nc,
+		// },
 		&controllers.LinkSpecController{
 			NC: nc,
 		},
